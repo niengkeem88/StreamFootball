@@ -46,7 +46,6 @@ android {
         buildConfigField("String", "ADMOB_ANDROID_NATIVE_ID", "\"${gradleString("ADMOB_ANDROID_NATIVE_ID", "")}\"")
         buildConfigField("String", "ADMOB_ANDROID_REWARDED_ID", "\"${gradleString("ADMOB_ANDROID_REWARDED_ID", "")}\"")
         buildConfigField("String", "ADMOB_TEST_DEVICE_IDS", "\"${gradleString("ADMOB_TEST_DEVICE_IDS", "")}\"")
-        buildConfigField("boolean", "ENABLE_TEAM_LOGOS", gradleBoolean("ENABLE_TEAM_LOGOS", true).toString())
     }
 
     buildTypes {
@@ -110,6 +109,4 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-ads:24.3.0")
     implementation("com.google.android.ump:user-messaging-platform:3.1.0")
-
-    testImplementation("junit:junit:4.13.2")
 }

@@ -1,6 +1,7 @@
 package com.matchpulse.live.core.navigation
 
 object Routes {
+    const val Onboarding = "onboarding"
     const val Home = "home"
     const val Settings = "settings"
     const val About = "about"
