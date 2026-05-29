@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -80,8 +81,8 @@ class MainActivity : ComponentActivity() {
             MatchPulseTheme(darkTheme = settings.darkMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when {
-                        !settings.onboardingCompleted -> OnboardingScreen(viewModel)
-                        !settings.termsAccepted -> TermsScreen(viewModel)
+                        !settings.onboardingCompleted -> OnboardingScreen(viewModel, adMobManager)
+                        !settings.termsAccepted -> TermsScreen(viewModel, adMobManager)
                         else -> MainApp(viewModel, adMobManager, interstitialAdManager)
                     }
                 }
@@ -91,30 +92,49 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun OnboardingScreen(viewModel: MainViewModel) {
+fun OnboardingScreen(viewModel: MainViewModel, adMobManager: AdMobManager) {
+    val config = adMobManager.adConfig()
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Welcome to MatchPulse Live", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(16.dp))
-        Text("Real-time football scores powered by ScoreBat.", style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(32.dp))
-        Button(onClick = { viewModel.completeOnboarding() }, modifier = Modifier.fillMaxWidth()) { Text("Get Started") }
+        Column(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Welcome to MatchPulse Live", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(16.dp))
+            Text("Real-time football scores powered by ScoreBat.", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(32.dp))
+            Button(onClick = { viewModel.completeOnboarding() }, modifier = Modifier.fillMaxWidth()) { Text("Get Started") }
+        }
+        if (config.enabled && config.bannerId.isNotBlank()) {
+            BannerAd(adUnitId = config.bannerId, modifier = Modifier.padding(top = 8.dp).alpha(0.6f))
+        }
     }
 }
 
 @Composable
-fun TermsScreen(viewModel: MainViewModel) {
+fun TermsScreen(viewModel: MainViewModel, adMobManager: AdMobManager) {
+    val config = adMobManager.adConfig()
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text("Terms of Service", style = MaterialTheme.typography.headlineMedium)
-        Text(termsText(), style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(8.dp))
-        Button(onClick = { viewModel.acceptTerms() }, modifier = Modifier.fillMaxWidth()) { Text("Accept & Continue") }
+        Column(
+            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("Terms of Service", style = MaterialTheme.typography.headlineMedium)
+            Text(termsText(), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = { viewModel.acceptTerms() }, modifier = Modifier.fillMaxWidth()) { Text("Accept & Continue") }
+        }
+        if (config.enabled && config.bannerId.isNotBlank()) {
+            BannerAd(adUnitId = config.bannerId, modifier = Modifier.padding(top = 8.dp).alpha(0.6f))
+        }
     }
 }
 
