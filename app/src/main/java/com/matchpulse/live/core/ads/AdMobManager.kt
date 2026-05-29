@@ -60,7 +60,6 @@ class AdMobManager @Inject constructor(
     }
 
     fun adConfig(): AdRuntimeConfig = AdConfig.from(appConfig)
-    fun isPrivacyOptionsRequired(): Boolean = consentManager.isPrivacyOptionsRequired
     fun showPrivacyOptions(activity: Activity) {
         consentManager.showPrivacyOptionsForm(activity) { error ->
             if (error != null) Log.e(LOG_TAG, "Privacy options form error: ${error.message}")

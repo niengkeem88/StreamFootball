@@ -20,17 +20,15 @@ fun BannerAd(
     val context = LocalContext.current
     val adRequest = remember { AdRequest.Builder().build() }
     val adView = remember {
-        AdView(context).apply {
-            this.adUnitId = adUnitId
-            adSize = AdSize.SMART_BANNER
-            loadAd(adRequest)
+        AdView(context).also { view ->
+            view.adUnitId = adUnitId
+            view.adSize = AdSize.SMART_BANNER
+            view.loadAd(adRequest)
         }
     }
 
     DisposableEffect(adView) {
-        onDispose {
-            adView.destroy()
-        }
+        onDispose { adView.destroy() }
     }
 
     Box(modifier = modifier.fillMaxWidth()) {

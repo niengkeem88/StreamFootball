@@ -17,9 +17,6 @@ class ConsentManager @Inject constructor() {
     val canRequestAds: Boolean
         get() = consentInformation?.canRequestAds() ?: true
 
-    val isPrivacyOptionsRequired: Boolean
-        get() = consentInformation?.isPrivacyOptionsRequired() ?: false
-
     fun gatherConsent(activity: Activity, onComplete: (Exception?) -> Unit) {
         val params = ConsentRequestParameters.Builder().build()
         consentInformation = UserMessagingPlatform.getConsentInformation(activity)
@@ -28,20 +25,17 @@ class ConsentManager @Inject constructor() {
             if (info.isConsentFormAvailable()) {
                 UserMessagingPlatform.loadConsentForm(
                     activity,
-                    object : UserMessagingPlatform.ConsentFormLoadCallback() {
-                        override fun onConsentFormLoaded(consentForm: ConsentForm) {
-                            consentForm.show(
-                                activity,
-                                ConsentForm.OnConsentFormDismissedListener { formError ->
-                                    onComplete(formError?.let { Exception(it.message) })
-                                },
-                            )
-                        }
-
-                        override fun onConsentFormLoadError(formError: FormError) {
-                            Log.e(LOG_TAG, "Consent form load error: ${formError.message}")
-                            onComplete(Exception(formError.message))
-                        }
+                    { form: ConsentForm ->
+                        form.show(
+                            activity,
+                            { formError: FormError? ->
+                                onComplete(formError?.let { Exception(it.message) })
+                            },
+                        )
+                    },
+                    { formError: FormError ->
+                        Log.e(LOG_TAG, "Consent form load error: ${formError.message}")
+                        onComplete(Exception(formError.message))
                     },
                 )
             } else {
@@ -53,10 +47,8 @@ class ConsentManager @Inject constructor() {
     fun showPrivacyOptionsForm(activity: Activity, onComplete: (Exception?) -> Unit) {
         UserMessagingPlatform.showPrivacyOptionsForm(
             activity,
-            object : UserMessagingPlatform.OnConsentFormDismissedListener() {
-                override fun onConsentFormDismissed(formError: FormError?) {
-                    onComplete(formError?.let { Exception(it.message) })
-                }
+            { formError: FormError? ->
+                onComplete(formError?.let { Exception(it.message) })
             },
         )
     }
