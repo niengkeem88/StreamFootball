@@ -1,9 +1,7 @@
 package com.matchpulse.live.core.ads
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -20,15 +18,16 @@ fun BannerAd(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val adRequest = remember { AdRequest.Builder().build() }
     val adView = remember {
         AdView(context).apply {
-            adUnitId = adUnitId
+            this.adUnitId = adUnitId
             adSize = AdSize.SMART_BANNER
+            loadAd(adRequest)
         }
     }
 
     DisposableEffect(adView) {
-        adView.loadAd(AdRequest.Builder().build())
         onDispose {
             adView.destroy()
         }

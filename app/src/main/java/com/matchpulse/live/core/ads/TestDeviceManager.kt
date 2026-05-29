@@ -10,7 +10,10 @@ import javax.inject.Singleton
 class TestDeviceManager @Inject constructor(
     private val appConfig: AppConfig,
 ) {
-    data class Status(val active: Boolean, val configuredIds: List<String> = emptyList())
+    data class Status(
+        val active: Boolean = false,
+        val configuredIds: List<String> = emptyList(),
+    )
 
     private var applied = false
     private var status = Status()

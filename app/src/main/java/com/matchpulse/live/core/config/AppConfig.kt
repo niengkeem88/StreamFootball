@@ -10,7 +10,7 @@ data class AppConfig(
     val admobAndroidInterstitialId: String,
     val admobAndroidNativeId: String,
     val admobAndroidRewardedId: String,
-    val enableTeamLogos: Boolean,
+
     val admobTestDeviceIds: String,
 ) {
     val isProduction: Boolean = false
@@ -45,7 +45,7 @@ data class AppConfig(
             admobAndroidInterstitialId = BuildConfig.ADMOB_ANDROID_INTERSTITIAL_ID,
             admobAndroidNativeId = BuildConfig.ADMOB_ANDROID_NATIVE_ID,
             admobAndroidRewardedId = BuildConfig.ADMOB_ANDROID_REWARDED_ID,
-            enableTeamLogos = BuildConfig.ENABLE_TEAM_LOGOS,
+
             admobTestDeviceIds = BuildConfig.ADMOB_TEST_DEVICE_IDS,
         )
     }
