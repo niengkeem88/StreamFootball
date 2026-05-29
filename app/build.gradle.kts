@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,7 +9,7 @@ plugins {
 }
 
 fun gradleString(name: String, defaultValue: String): String {
-    val localProperties = java.util.Properties()
+    val localProperties = Properties()
     val file = rootProject.file("local.properties")
     if (file.exists()) {
         file.inputStream().use { localProperties.load(it) }
