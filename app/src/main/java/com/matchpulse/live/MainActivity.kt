@@ -217,6 +217,25 @@ fun HomeScreen(adMobManager: AdMobManager) {
     val token = "YOUR_SCOREBAT_TOKEN"
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Custom app header replacing ScoreBat branding
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "⚽ MatchPulse Sports Streaming",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
         ScoreBatWidget(token = token, modifier = Modifier.weight(1f))
 
         if (config.enabled && config.bannerId.isNotBlank()) {
@@ -264,6 +283,44 @@ fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
         view.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                // Inject CSS to hide ScoreBat branding elements (header, logo, powered by, etc.)
+                view?.evaluateJavascript("""
+                    (function() {
+                        // Hide all ScoreBat branding, ads, and sponsored content
+                        var css = [
+                            '.scorebat-header, .scorebat-logo, .powered-by, .sb-branding,',
+                            '.sb-header, .sb-logo, .sb-footer, .sb-credit,',
+                            '.scorebat-ad, .sb-ad, .sb-ad-container, .ad-container,',
+                            '.ad-unit, .ad-section, .sponsored, .promoted,',
+                            '[class*="header"], [class*="logo"], [class*="powered"],',
+                            '[class*="brand"], [class*="credit"], [class*="footer"],',
+                            '[class*="ad-"], [class*="_ad"], [class*="sponsor"], [class*="promo"],',
+                            'header, footer, .header, .footer, .logo, .brand,',
+                            '[id*="header"], [id*="logo"], [id*="brand"], [id*="powered"],',
+                            '[id*="ad"], [id*="sponsor"], [id*="promo"]',
+                            '{ display: none !important; }',
+                            'body > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }',
+                            'iframe { border: none !important; }',
+                        ].join(' ');
+                        var style = document.createElement('style');
+                        style.innerHTML = css;
+                        document.head.appendChild(style);
+
+                        // Also remove any iframes that are likely ads (from known ad domains)
+                        setTimeout(function() {
+                            var iframes = document.querySelectorAll('iframe');
+                            for (var i = 0; i < iframes.length; i++) {
+                                var src = (iframes[i].getAttribute('src') || '').toLowerCase();
+                                if (src.indexOf('doubleclick') !== -1 ||
+                                    src.indexOf('googlesyndication') !== -1 ||
+                                    src.indexOf('googleadservices') !== -1 ||
+                                    src.indexOf('scorebat.com/ad') !== -1) {
+                                    iframes[i].style.display = 'none';
+                                }
+                            }
+                        }, 500);
+                    })();
+                """.trimIndent(), null)
             }
         }
         view.loadUrl("https://www.scorebat.com/embed/livescore/?token=$token&theme=dark&lang=en")
