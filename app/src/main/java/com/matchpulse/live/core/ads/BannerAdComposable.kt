@@ -21,8 +21,8 @@ fun BannerAd(
     val adRequest = remember { AdRequest.Builder().build() }
     val adView = remember {
         AdView(context).also { view ->
-            view.adUnitId = adUnitId
-            view.adSize = AdSize.SMART_BANNER
+            view.setAdUnitId(adUnitId)
+            view.setAdSize(AdSize.SMART_BANNER)
             view.loadAd(adRequest)
         }
     }
