@@ -1,40 +1,30 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
+    kotlin("kapt")
 }
 
 fun gradleString(name: String, defaultValue: String): String {
-    val localProperties = Properties()
+    val localProperties = java.util.Properties()
     val file = rootProject.file("local.properties")
     if (file.exists()) {
         file.inputStream().use { localProperties.load(it) }
     }
     val projectProp = project.findProperty(name) as? String
     if (!projectProp.isNullOrBlank()) return projectProp
-    
     val localProp = localProperties.getProperty(name)
     if (!localProp.isNullOrBlank()) return localProp
-    
     return defaultValue
 }
 
 fun gradleBoolean(name: String, defaultValue: Boolean): Boolean =
     gradleString(name, defaultValue.toString()).toBooleanStrictOrNull() ?: defaultValue
 
-val appEnv = gradleString("APP_ENV", "development")
-val isProduction = appEnv == "production"
-val apiBaseUrl = gradleString("API_BASE_URL", if (isProduction) "" else "https://matchpulse.invalid")
-val footballApiMode = gradleString("FOOTBALL_API_MODE", "mock")
 val admobTestAppId = "ca-app-pub-3940256099942544~3347511713"
-val admobAppId = gradleString("ADMOB_ANDROID_APP_ID", if (isProduction) "" else admobTestAppId)
-val manifestAdmobAppId = admobAppId.ifBlank { if (isProduction) "" else admobTestAppId }
-val enableAdsDefault = !isProduction
+val admobAppId = gradleString("ADMOB_ANDROID_APP_ID", admobTestAppId)
+val manifestAdmobAppId = admobAppId.ifBlank { admobTestAppId }
 
 android {
     namespace = "com.matchpulse.live"
@@ -46,14 +36,10 @@ android {
         targetSdk = 36
         versionCode = 2
         versionName = "1.0.1"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["admobAppId"] = manifestAdmobAppId
 
-        buildConfigField("String", "APP_ENV", "\"$appEnv\"")
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-        buildConfigField("String", "FOOTBALL_API_MODE", "\"$footballApiMode\"")
-        buildConfigField("boolean", "ENABLE_ADS", gradleBoolean("ENABLE_ADS", enableAdsDefault).toString())
+        buildConfigField("boolean", "ENABLE_ADS", gradleBoolean("ENABLE_ADS", true).toString())
         buildConfigField("String", "ADMOB_ANDROID_APP_ID", "\"$admobAppId\"")
         buildConfigField("String", "ADMOB_ANDROID_BANNER_ID", "\"${gradleString("ADMOB_ANDROID_BANNER_ID", "")}\"")
         buildConfigField("String", "ADMOB_ANDROID_INTERSTITIAL_ID", "\"${gradleString("ADMOB_ANDROID_INTERSTITIAL_ID", "")}\"")
@@ -61,10 +47,6 @@ android {
         buildConfigField("String", "ADMOB_ANDROID_REWARDED_ID", "\"${gradleString("ADMOB_ANDROID_REWARDED_ID", "")}\"")
         buildConfigField("String", "ADMOB_TEST_DEVICE_IDS", "\"${gradleString("ADMOB_TEST_DEVICE_IDS", "")}\"")
         buildConfigField("boolean", "ENABLE_TEAM_LOGOS", gradleBoolean("ENABLE_TEAM_LOGOS", true).toString())
-        buildConfigField("boolean", "ENABLE_LEGAL_PROVIDER_LINKS", gradleBoolean("ENABLE_LEGAL_PROVIDER_LINKS", true).toString())
-        buildConfigField("boolean", "ENABLE_EXPERIMENTAL_PLAYER", gradleBoolean("ENABLE_EXPERIMENTAL_PLAYER", false).toString())
-        buildConfigField("String", "FOOTBALL_API_KEY", "\"${gradleString("FOOTBALL_API_KEY", "")}\"")
-        buildConfigField("String", "FOOTBALL_API_HOST", "\"v3.football.api-sports.io\"")
     }
 
     buildTypes {
@@ -125,25 +107,9 @@ dependencies {
     kapt("com.google.dagger:hilt-compiler:2.57.1")
 
     implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("androidx.room:room-runtime:2.8.4")
-    implementation("androidx.room:room-ktx:2.8.4")
-    kapt("androidx.room:room-compiler:2.8.4")
 
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-
-    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
     implementation("com.google.android.gms:play-services-ads:24.3.0")
     implementation("com.google.android.ump:user-messaging-platform:3.1.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    testImplementation("androidx.test:core:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }

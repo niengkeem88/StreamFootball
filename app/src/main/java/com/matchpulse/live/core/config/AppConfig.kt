@@ -4,9 +4,6 @@ import com.matchpulse.live.BuildConfig
 
 data class AppConfig(
     val isDebugBuild: Boolean,
-    val appEnv: String,
-    val apiBaseUrl: String,
-    val footballApiMode: String,
     val enableAdsFlag: Boolean,
     val admobAndroidAppId: String,
     val admobAndroidBannerId: String,
@@ -14,14 +11,10 @@ data class AppConfig(
     val admobAndroidNativeId: String,
     val admobAndroidRewardedId: String,
     val enableTeamLogos: Boolean,
-    val enableLegalProviderLinks: Boolean,
-    val enableExperimentalPlayer: Boolean,
     val admobTestDeviceIds: String,
 ) {
-    val isProduction: Boolean = appEnv.equals("production", ignoreCase = true)
+    val isProduction: Boolean = false
     val isDebugLike: Boolean = isDebugBuild || !isProduction
-    val isMockMode: Boolean = footballApiMode.equals("mock", ignoreCase = true)
-    val isBackendMode: Boolean = footballApiMode.equals("backend", ignoreCase = true)
 
     val shouldEnableAds: Boolean =
         enableAdsFlag && if (isDebugBuild) true else hasProductionAdIds()
@@ -46,9 +39,6 @@ data class AppConfig(
 
         fun current(): AppConfig = AppConfig(
             isDebugBuild = BuildConfig.DEBUG,
-            appEnv = BuildConfig.APP_ENV,
-            apiBaseUrl = BuildConfig.API_BASE_URL,
-            footballApiMode = BuildConfig.FOOTBALL_API_MODE,
             enableAdsFlag = BuildConfig.ENABLE_ADS,
             admobAndroidAppId = BuildConfig.ADMOB_ANDROID_APP_ID,
             admobAndroidBannerId = BuildConfig.ADMOB_ANDROID_BANNER_ID,
@@ -56,8 +46,6 @@ data class AppConfig(
             admobAndroidNativeId = BuildConfig.ADMOB_ANDROID_NATIVE_ID,
             admobAndroidRewardedId = BuildConfig.ADMOB_ANDROID_REWARDED_ID,
             enableTeamLogos = BuildConfig.ENABLE_TEAM_LOGOS,
-            enableLegalProviderLinks = BuildConfig.ENABLE_LEGAL_PROVIDER_LINKS,
-            enableExperimentalPlayer = BuildConfig.ENABLE_EXPERIMENTAL_PLAYER,
             admobTestDeviceIds = BuildConfig.ADMOB_TEST_DEVICE_IDS,
         )
     }
