@@ -125,12 +125,27 @@ fun TermsScreen(viewModel: MainViewModel, adMobManager: AdMobManager) {
     ) {
         Column(
             modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Terms of Service", style = MaterialTheme.typography.headlineMedium)
-            Text(termsText(), style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = { viewModel.acceptTerms() }, modifier = Modifier.fillMaxWidth()) { Text("Accept & Continue") }
+            Text(
+                "Terms of Service",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                termsText(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = { viewModel.acceptTerms() },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            ) {
+                Text("Accept & Continue")
+            }
         }
         if (config.enabled && config.bannerId.isNotBlank()) {
             BannerAd(adUnitId = config.bannerId, modifier = Modifier.padding(top = 8.dp).alpha(0.6f))
