@@ -283,31 +283,32 @@ fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
         view.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // Inject CSS to hide ScoreBat branding elements (header, logo, powered by, etc.)
+                // Hide ScoreBat branding & ads using MutationObserver for dynamic content
                 view?.evaluateJavascript("""
                     (function() {
-                        // Hide all ScoreBat branding, ads, and sponsored content
+                        // --- Step 1: Inject baseline CSS ---
                         var css = [
                             '.scorebat-header, .scorebat-logo, .powered-by, .sb-branding,',
                             '.sb-header, .sb-logo, .sb-footer, .sb-credit,',
                             '.scorebat-ad, .sb-ad, .sb-ad-container, .ad-container,',
-                            '.ad-unit, .ad-section, .sponsored, .promoted,',
+                            '.ad-unit, .ad-section, .sponsored, .promoted, .affiliate,',
                             '[class*="header"], [class*="logo"], [class*="powered"],',
                             '[class*="brand"], [class*="credit"], [class*="footer"],',
                             '[class*="ad-"], [class*="_ad"], [class*="sponsor"], [class*="promo"],',
+                            '[class*="affiliate"], [class*="loadingSkeleton"],',
                             'header, footer, .header, .footer, .logo, .brand,',
                             '[id*="header"], [id*="logo"], [id*="brand"], [id*="powered"],',
-                            '[id*="ad"], [id*="sponsor"], [id*="promo"]',
+                            '[id*="ad"], [id*="sponsor"], [id*="promo"], [id*="affiliate"]',
                             '{ display: none !important; }',
                             'body > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }',
-                            'iframe { border: none !important; }',
                         ].join(' ');
                         var style = document.createElement('style');
+                        style.id = '__mp_hide_ads';
                         style.innerHTML = css;
                         document.head.appendChild(style);
 
-                        // Also remove any iframes that are likely ads (from known ad domains)
-                        setTimeout(function() {
+                        // --- Step 2: Helper to hide ad iframes ---
+                        function hideAdIframes() {
                             var iframes = document.querySelectorAll('iframe');
                             for (var i = 0; i < iframes.length; i++) {
                                 var src = (iframes[i].getAttribute('src') || '').toLowerCase();
@@ -318,7 +319,67 @@ fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
                                     iframes[i].style.display = 'none';
                                 }
                             }
-                        }, 500);
+                        }
+
+                        // --- Step 3: Helper to hide elements by text content ---
+                        function hideByText() {
+                            var walker = document.createTreeWalker(
+                                document.body,
+                                NodeFilter.SHOW_TEXT,
+                                null,
+                                false
+                            );
+                            var textLower;
+                            var node; while (node = walker.nextNode()) {
+                                textLower = node.textContent.toLowerCase().trim();
+                                if (textLower.indexOf('sponsor') !== -1 ||
+                                    textLower.indexOf('advertis') !== -1 ||
+                                    textLower.indexOf('powered by') !== -1 ||
+                                    textLower.indexOf('brought to you') !== -1 ||
+                                    textLower.indexOf('scorebat') !== -1 ||
+                                    textLower === 'ad') {
+                                    var parent = node.parentElement;
+                                    if (parent && parent.offsetParent !== null) {
+                                        parent.style.display = 'none';
+                                    }
+                                }
+                            }
+                        }
+
+                        // --- Step 4: MutationObserver to catch dynamically added content ---
+                        var observer = new MutationObserver(function(mutations) {
+                            var needsCheck = false;
+                            for (var m = 0; m < mutations.length; m++) {
+                                if (mutations[m].addedNodes.length > 0) {
+                                    needsCheck = true;
+                                    break;
+                                }
+                            }
+                            if (needsCheck) {
+                                hideAdIframes();
+                                hideByText();
+                            }
+                        });
+
+                        observer.observe(document.body || document.documentElement, {
+                            childList: true,
+                            subtree: true
+                        });
+
+                        // --- Step 5: Initial cleanup + periodic re-checks ---
+                        hideAdIframes();
+                        hideByText();
+
+                        // Re-check periodically for late-loading ads
+                        var intervals = [1000, 2000, 3000, 5000, 8000, 12000, 20000];
+                        for (var i = 0; i < intervals.length; i++) {
+                            (function(delay) {
+                                setTimeout(function() {
+                                    hideAdIframes();
+                                    hideByText();
+                                }, delay);
+                            })(intervals[i]);
+                        }
                     })();
                 """.trimIndent(), null)
             }
