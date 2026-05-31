@@ -54,6 +54,11 @@ import com.matchpulse.live.feature.main.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.webkit.WebView
+import android.webkit.WebSettings
+import android.webkit.WebViewClient
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -334,22 +339,91 @@ fun MainApp(
 @Composable
 fun HomeScreen(adMobManager: AdMobManager) {
     val config = adMobManager.adConfig()
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            "\u26BD MatchPulse Live",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Live scores coming soon",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    val token = "YOUR_SCOREBAT_TOKEN"
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Custom app header replacing ScoreBat branding
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "\u26BD MatchPulse Sports Streaming",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        ScoreBatWidget(token = token, modifier = Modifier.weight(1f))
+
+        if (config.enabled && config.bannerId.isNotBlank()) {
+            BannerAd(adUnitId = config.bannerId)
+        }
+    }
+}
+
+fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    val webView = remember {
+        WebView(context).apply {
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                loadsImagesAutomatically = true
+                useWideViewPort = true
+                loadWithOverviewMode = true
+                allowFileAccess = false
+                allowContentAccess = false
+                mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            }
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        }
+    }
+
+    DisposableEffect(webView) {
+        onDispose {
+            try {
+                webView.stopLoading()
+                webView.loadUrl("about:blank")
+                webView.removeAllViews()
+                webView.destroy()
+            } catch (_: Exception) {}
+        }
+    }
+
+    AndroidView(
+        factory = { webView },
+        modifier = modifier,
+    ) { view ->
+        view.webViewClient = object : WebViewClient() {
+            // Block requests to known ad servers
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?
+            ): android.webkit.WebResourceResponse? {
+                val url = request?.url?.toString()?.lowercase() ?: return null
+                if (url.contains("doubleclick") ||
+                    url.contains("googlesyndication") ||
+                    url.contains("googleadservices") ||
+                    url.contains("googletagmanager") ||
+                    url.contains("googletagservices") ||
+                    url.contains("scorebat.com/ad")) {
+                    return android.webkit.WebResourceResponse(
+                        "text/plain", "utf-8", java.io.ByteArrayInputStream("".toByteArray())
+                    )
+                }
+                return null
+            }
+        }
+        view.loadUrl("https://www.scorebat.com/embed/livescore/?token=$token&theme=dark&lang=en")
     }
 }
 
