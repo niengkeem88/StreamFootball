@@ -46,6 +46,7 @@ import androidx.navigation.compose.rememberNavController
 import com.matchpulse.live.core.ads.AdMobManager
 import com.matchpulse.live.core.ads.BannerAd
 import com.matchpulse.live.core.ads.InterstitialAdManager
+import com.matchpulse.live.core.ads.WidgetBridge
 import com.matchpulse.live.core.datastore.UserSettings
 import com.matchpulse.live.core.design.theme.MatchPulseTheme
 import com.matchpulse.live.core.navigation.Routes
@@ -409,13 +410,6 @@ fun HomeScreen(adMobManager: AdMobManager, interstitialAdManager: InterstitialAd
 
 @Composable
 @Composable
-private class WidgetBridge(private val onTabChanged: () -> Unit) {
-    @android.webkit.JavascriptInterface
-    fun onTabChanged() {
-        onTabChanged()
-    }
-}
-
 @Composable
 fun ScoreBatWidget(
     token: String,
