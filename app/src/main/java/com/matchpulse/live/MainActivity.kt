@@ -349,7 +349,7 @@ fun MainApp(
             startDestination = Routes.Home,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.Home) { HomeScreen(adMobManager) }
+            composable(Routes.Home) { HomeScreen(adMobManager, interstitialAdManager) }
             composable(Routes.Settings) { val settings by viewModel.settings.collectAsStateWithLifecycle(); SettingsScreen(navController, viewModel, settings) }
             composable(Routes.About) { InfoPage("About", aboutText()) }
             composable(Routes.Privacy) { InfoPage("Privacy Policy", privacyText()) }
@@ -359,7 +359,7 @@ fun MainApp(
 }
 
 @Composable
-fun HomeScreen(adMobManager: AdMobManager) {
+fun HomeScreen(adMobManager: AdMobManager, interstitialAdManager: InterstitialAdManager) {
     val config = adMobManager.adConfig()
     val token = "YOUR_SCOREBAT_TOKEN"
     Column(modifier = Modifier.fillMaxSize()) {
@@ -382,7 +382,24 @@ fun HomeScreen(adMobManager: AdMobManager) {
             }
         }
 
-        ScoreBatWidget(token = token, modifier = Modifier.weight(1f))
+        val activity = LocalContext.current as? ComponentActivity
+        val scope = rememberCoroutineScope()
+
+        ScoreBatWidget(
+            token = token,
+            modifier = Modifier.weight(1f),
+            onWidgetTabChange = {
+                if (config.enabled && config.interstitialId.isNotBlank() && activity != null) {
+                    scope.launch {
+                        interstitialAdManager.show(
+                            activity = activity,
+                            adUnitId = config.interstitialId,
+                            onDismissed = {}
+                        )
+                    }
+                }
+            }
+        )
 
         if (config.enabled && config.bannerId.isNotBlank()) {
             BannerAd(adUnitId = config.bannerId)
@@ -391,8 +408,21 @@ fun HomeScreen(adMobManager: AdMobManager) {
 }
 
 @Composable
-fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
+@Composable
+fun ScoreBatWidget(
+    token: String,
+    modifier: Modifier = Modifier,
+    onWidgetTabChange: () -> Unit = {},
+) {
     val context = LocalContext.current
+
+    // JavaScriptInterface to bridge WebView -> Android
+    class WidgetBridge {
+        @android.webkit.JavascriptInterface
+        fun onTabChanged() {
+            onWidgetTabChange()
+        }
+    }
 
     val webView = remember {
         WebView(context).apply {
@@ -408,6 +438,7 @@ fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
             }
             isHorizontalScrollBarEnabled = false
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            addJavascriptInterface(WidgetBridge(), "MatchPulseBridge")
         }
     }
 
@@ -444,6 +475,27 @@ fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
                     )
                 }
                 return null
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                view?.evaluateJavascript(
+                    "(function() {" +
+                    "var origPushState = history.pushState;" +
+                    "history.pushState = function() {" +
+                    "origPushState.apply(this, arguments);" +
+                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "};" +
+                    "var origReplaceState = history.replaceState;" +
+                    "history.replaceState = function() {" +
+                    "origReplaceState.apply(this, arguments);" +
+                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "};" +
+                    "window.addEventListener('popstate', function() {" +
+                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "});" +
+                    "})()", null
+                )
             }
         }
         view.loadUrl("https://www.scorebat.com/embed/livescore/?token=$token&theme=dark&lang=en")
