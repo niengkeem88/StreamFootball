@@ -1,9 +1,6 @@
 package com.matchpulse.live
 
 import android.os.Bundle
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,9 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -60,6 +54,16 @@ import com.matchpulse.live.feature.main.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -81,8 +85,7 @@ class MainActivity : ComponentActivity() {
             MatchPulseTheme(darkTheme = settings.darkMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when {
-                        !settings.onboardingCompleted -> OnboardingScreen(viewModel, adMobManager)
-                        !settings.termsAccepted -> TermsScreen(viewModel, adMobManager)
+                        !settings.onboardingCompleted -> OnboardingFlow(viewModel, adMobManager, interstitialAdManager)
                         else -> MainApp(viewModel, adMobManager, interstitialAdManager)
                     }
                 }
@@ -91,64 +94,187 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class OnboardingPage(
+    val emoji: String,
+    val title: String,
+    val description: String,
+)
+
+private val onboardingPages = listOf(
+    OnboardingPage(
+        emoji = "\u26BD",
+        title = "Welcome to MatchPulse",
+        description = "Your ultimate companion for live football scores, match updates, and streaming. Never miss a moment of the action!",
+    ),
+    OnboardingPage(
+        emoji = "\uD83D\uDCF1",
+        title = "Live Scores in Real-Time",
+        description = "Follow hundreds of leagues and competitions from around the world. Instant updates as goals happen.",
+    ),
+    OnboardingPage(
+        emoji = "\uD83D\uDD14",
+        title = "Instant Notifications",
+        description = "Get alerted for goals, red cards, match starts, and final results. Stay connected to the game wherever you are.",
+    ),
+    OnboardingPage(
+        emoji = "\uD83D\uDC4B",
+        title = "Terms of Service",
+        description = "By using MatchPulse, you agree to our terms. Your privacy matters - we only store your preferences locally. Ads help keep the app free.",
+    ),
+    OnboardingPage(
+        emoji = "\uD83C\uDF1F",
+        title = "You're All Set!",
+        description = "Start exploring live scores, follow your favorite teams, and enjoy the beautiful game with MatchPulse.",
+    ),
+)
+
 @Composable
-fun OnboardingScreen(viewModel: MainViewModel, adMobManager: AdMobManager) {
+fun OnboardingFlow(
+    viewModel: MainViewModel,
+    adMobManager: AdMobManager,
+    interstitialAdManager: InterstitialAdManager,
+) {
     val config = adMobManager.adConfig()
+    val activity = LocalContext.current as? ComponentActivity
+    var currentPage by remember { mutableIntStateOf(0) }
+    var showInterstitial by remember { mutableStateOf(false) }
+    var pendingPage by remember { mutableIntStateOf(-1) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Handle interstitial ad callback
+    LaunchedEffect(showInterstitial) {
+        if (showInterstitial && pendingPage >= 0 && activity != null) {
+            showInterstitial = false
+            interstitialAdManager.show(
+                activity = activity,
+                adUnitId = config.interstitialId,
+                onDismissed = {
+                    currentPage = pendingPage
+                    pendingPage = -1
+                }
+            )
+        }
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
     ) {
+        // Main content area (weight 1f to push banner to bottom)
         Column(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Welcome to MatchPulse Live", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(16.dp))
-            Text("Real-time football scores powered by ScoreBat.", style = MaterialTheme.typography.bodyLarge)
-            Spacer(Modifier.height(32.dp))
-            Button(onClick = { viewModel.completeOnboarding() }, modifier = Modifier.fillMaxWidth()) { Text("Get Started") }
-        }
-        if (config.enabled && config.bannerId.isNotBlank()) {
-            BannerAd(adUnitId = config.bannerId, modifier = Modifier.padding(top = 8.dp).alpha(0.6f))
-        }
-    }
-}
+            val page = onboardingPages[currentPage]
 
-@Composable
-fun TermsScreen(viewModel: MainViewModel, adMobManager: AdMobManager) {
-    val config = adMobManager.adConfig()
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+            Spacer(Modifier.height(24.dp))
+
+            // Emoji/Illustration
             Text(
-                "Terms of Service",
+                text = page.emoji,
+                style = MaterialTheme.typography.displayLarge,
+                modifier = Modifier.padding(16.dp),
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Title
+            Text(
+                text = page.title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 32.dp),
             )
-            Spacer(Modifier.height(16.dp))
+
+            Spacer(Modifier.height(12.dp))
+
+            // Description
             Text(
-                termsText(),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth(),
+                text = page.description,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 32.dp),
             )
+
             Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = { viewModel.acceptTerms() },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+
+            // Page indicator dots
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Accept & Continue")
+                onboardingPages.forEachIndexed { index, _ ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(if (index == currentPage) 10.dp else 8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == currentPage) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            )
+                    )
+                }
             }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Next / Get Started button
+            Button(
+                onClick = {
+                    if (currentPage < onboardingPages.size - 1) {
+                        if (config.enabled && config.interstitialId.isNotBlank()) {
+                            pendingPage = currentPage + 1
+                            showInterstitial = true
+                        } else {
+                            currentPage++
+                        }
+                    } else {
+                        coroutineScope.launch {
+                            viewModel.completeOnboarding()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(50.dp),
+            ) {
+                Text(
+                    if (currentPage < onboardingPages.size - 1) "Next" else "Get Started",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+
+            // Skip button (only on non-last pages)
+            if (currentPage < onboardingPages.size - 1) {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            viewModel.completeOnboarding()
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(
+                        "Skip",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
+
+        // Bottom banner ad - positioned as shown in the screenshot
         if (config.enabled && config.bannerId.isNotBlank()) {
-            BannerAd(adUnitId = config.bannerId, modifier = Modifier.padding(top = 8.dp).alpha(0.6f))
+            BannerAd(
+                adUnitId = config.bannerId,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(0.7f),
+            )
         }
     }
 }
@@ -161,67 +287,46 @@ fun MainApp(
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Routes.Home
-    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val currentRoute = navBackStackEntry?.destination?.route
     val scope = rememberCoroutineScope()
-    val activity = LocalContext.current as android.app.Activity
-    val adConfig = adMobManager.adConfig()
-
-    // Track navigation for frequency caps
-    LaunchedEffect(currentRoute) {
-        viewModel.recordNavigation()
-    }
-
-    // Show interstitial when navigating away from Home (with frequency checking)
-    val showInterstitial: (String) -> Unit = { targetRoute ->
-        scope.launch {
-            viewModel.canShowInterstitial().let { canShow ->
-                if (canShow && adConfig.enabled && adConfig.interstitialId.isNotBlank()) {
-                    interstitialAdManager.show(activity, adConfig.interstitialId) {
-                        viewModel.recordInterstitialShown()
-                    }
-                }
-            }
-            navController.navigate(targetRoute) {
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-            }
-        }
-    }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                bottomTabs.forEach { tab ->
-                    NavigationBarItem(
-                        selected = currentRoute == tab.route,
-                        onClick = {
-                            if (currentRoute != tab.route) {
-                                showInterstitial(tab.route)
+            if (currentRoute in bottomTabs.map { it.route }) {
+                NavigationBar {
+                    bottomTabs.forEach { tab ->
+                        NavigationBarItem(
+                            selected = currentRoute == tab.route,
+                            onClick = {
+                                if (currentRoute != tab.route) {
+                                    scope.launch {
+                                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                        icon = {},
-                        label = { Text(tab.label) },
-                    )
+                                        viewModel.recordNavigation()
+                                    }
+                                }
+                            },
+                            icon = { Text(tab.label.first().toString()) },
+                            label = { Text(tab.label) },
+                        )
+                    }
                 }
             }
-        }
-    ) { padding ->
+        },
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Routes.Home,
-            modifier = Modifier.padding(padding),
+            modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Routes.Home) {
-                HomeScreen(adMobManager)
-            }
-            composable(Routes.Settings) {
-                SettingsScreen(navController, viewModel, settings)
-            }
+            composable(Routes.Home) { HomeScreen(adMobManager) }
+            composable(Routes.Settings) { val settings by viewModel.settings.collectAsStateWithLifecycle(); SettingsScreen(navController, viewModel, settings) }
             composable(Routes.About) { InfoPage("About", aboutText()) }
-            composable(Routes.Privacy) { InfoPage("Privacy", privacyText()) }
-            composable(Routes.TermsPage) { InfoPage("Terms", termsText()) }
+            composable(Routes.Privacy) { InfoPage("Privacy Policy", privacyText()) }
+            composable(Routes.TermsPage) { InfoPage("Terms of Service", termsText()) }
         }
     }
 }
@@ -229,93 +334,22 @@ fun MainApp(
 @Composable
 fun HomeScreen(adMobManager: AdMobManager) {
     val config = adMobManager.adConfig()
-    val token = "YOUR_SCOREBAT_TOKEN"
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Custom app header replacing ScoreBat branding
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "⚽ MatchPulse Sports Streaming",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-
-        ScoreBatWidget(token = token, modifier = Modifier.weight(1f))
-
-        if (config.enabled && config.bannerId.isNotBlank()) {
-            BannerAd(adUnitId = config.bannerId)
-        }
-    }
-}
-
-@Composable
-fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-
-    val webView = remember {
-        WebView(context).apply {
-            settings.apply {
-                javaScriptEnabled = true
-                domStorageEnabled = true
-                loadsImagesAutomatically = true
-                useWideViewPort = true
-                loadWithOverviewMode = true
-                allowFileAccess = false
-                allowContentAccess = false
-                mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            }
-            isHorizontalScrollBarEnabled = false
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        }
-    }
-
-    DisposableEffect(webView) {
-        onDispose {
-            try {
-                webView.stopLoading()
-                webView.loadUrl("about:blank")
-                webView.removeAllViews()
-                webView.destroy()
-            } catch (_: Exception) {}
-        }
-    }
-
-    AndroidView(
-        factory = { webView },
-        modifier = modifier,
-    ) { view ->
-        view.webViewClient = object : WebViewClient() {
-            // Block requests to known ad servers
-            override fun shouldInterceptRequest(
-                view: WebView?,
-                request: android.webkit.WebResourceRequest?
-            ): android.webkit.WebResourceResponse? {
-                val url = request?.url?.toString()?.lowercase() ?: return null
-                if (url.contains("doubleclick") ||
-                    url.contains("googlesyndication") ||
-                    url.contains("googleadservices") ||
-                    url.contains("googletagmanager") ||
-                    url.contains("googletagservices") ||
-                    url.contains("scorebat.com/ad")) {
-                    return android.webkit.WebResourceResponse(
-                        "text/plain", "utf-8", java.io.ByteArrayInputStream("".toByteArray())
-                    )
-                }
-                return null
-            }
-        }
-        view.loadUrl("https://www.scorebat.com/embed/livescore/?token=$token&theme=dark&lang=en")
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "\u26BD MatchPulse Live",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Live scores coming soon",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
