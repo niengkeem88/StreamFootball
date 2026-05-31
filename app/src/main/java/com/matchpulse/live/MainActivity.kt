@@ -294,6 +294,8 @@ fun MainApp(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val scope = rememberCoroutineScope()
+    val config = adMobManager.adConfig()
+    val activity = LocalContext.current as? ComponentActivity
 
     Scaffold(
         bottomBar = {
@@ -305,12 +307,26 @@ fun MainApp(
                             onClick = {
                                 if (currentRoute != tab.route) {
                                     scope.launch {
-                                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
                                         viewModel.recordNavigation()
+                                        if (config.enabled && config.interstitialId.isNotBlank() && activity != null) {
+                                            interstitialAdManager.show(
+                                                activity = activity,
+                                                adUnitId = config.interstitialId,
+                                                onDismissed = {
+                                                    navController.navigate(tab.route) {
+                                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            )
+                                        } else {
+                                            navController.navigate(tab.route) {
+                                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
                                     }
                                 }
                             },
