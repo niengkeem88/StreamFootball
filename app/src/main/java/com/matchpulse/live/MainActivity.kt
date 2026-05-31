@@ -409,6 +409,14 @@ fun HomeScreen(adMobManager: AdMobManager, interstitialAdManager: InterstitialAd
 
 @Composable
 @Composable
+private class WidgetBridge(private val onTabChanged: () -> Unit) {
+    @android.webkit.JavascriptInterface
+    fun onTabChanged() {
+        onTabChanged()
+    }
+}
+
+@Composable
 fun ScoreBatWidget(
     token: String,
     modifier: Modifier = Modifier,
@@ -416,13 +424,7 @@ fun ScoreBatWidget(
 ) {
     val context = LocalContext.current
 
-    // JavaScriptInterface to bridge WebView -> Android
-    class WidgetBridge {
-        @android.webkit.JavascriptInterface
-        fun onTabChanged() {
-            onWidgetTabChange()
-        }
-    }
+
 
     val webView = remember {
         WebView(context).apply {
@@ -438,7 +440,7 @@ fun ScoreBatWidget(
             }
             isHorizontalScrollBarEnabled = false
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            addJavascriptInterface(WidgetBridge(), "MatchPulseBridge")
+            addJavascriptInterface(WidgetBridge(onWidgetTabChange), "MatchPulseBridge")
         }
     }
 
