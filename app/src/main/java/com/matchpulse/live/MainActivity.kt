@@ -368,6 +368,7 @@ fun HomeScreen(adMobManager: AdMobManager) {
     }
 }
 
+@Composable
 fun ScoreBatWidget(token: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
