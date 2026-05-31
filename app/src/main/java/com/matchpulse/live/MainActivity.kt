@@ -86,11 +86,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
+            // Show onboarding on every app launch (not persisted)
+            var showOnboarding by remember { mutableStateOf(true) }
 
             MatchPulseTheme(darkTheme = settings.darkMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when {
-                        !settings.onboardingCompleted -> OnboardingFlow(viewModel, adMobManager, interstitialAdManager)
+                        showOnboarding -> OnboardingFlow(
+                            viewModel = viewModel,
+                            adMobManager = adMobManager,
+                            interstitialAdManager = interstitialAdManager,
+                            onComplete = { showOnboarding = false }
+                        )
                         else -> MainApp(viewModel, adMobManager, interstitialAdManager)
                     }
                 }
@@ -138,6 +145,7 @@ fun OnboardingFlow(
     viewModel: MainViewModel,
     adMobManager: AdMobManager,
     interstitialAdManager: InterstitialAdManager,
+    onComplete: () -> Unit = {},
 ) {
     val config = adMobManager.adConfig()
     val activity = LocalContext.current as? ComponentActivity
@@ -235,9 +243,7 @@ fun OnboardingFlow(
                             currentPage++
                         }
                     } else {
-                        coroutineScope.launch {
-                            viewModel.completeOnboarding()
-                        }
+                            onComplete()
                     }
                 },
                 modifier = Modifier
@@ -256,7 +262,7 @@ fun OnboardingFlow(
                 TextButton(
                     onClick = {
                         coroutineScope.launch {
-                            viewModel.completeOnboarding()
+                            onComplete()
                         }
                     },
                     modifier = Modifier.padding(top = 8.dp),
