@@ -427,19 +427,39 @@ fun ScoreBatWidget(
                 super.onPageFinished(view, url)
                 view?.evaluateJavascript(
                     "(function() {" +
+                    "var lastUrl = location.href;" +
+                    "var lastTrigger = 0;" +
+                    "var minInterval = 5000;" +
+                    "function triggerTabChange() {" +
+                    "var now = Date.now();" +
+                    "if (now - lastTrigger < minInterval) return;" +
+                    "lastTrigger = now;" +
+                    "setTimeout(function() {" +
+                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "}, 200);" +
+                    "}" +
                     "var origPushState = history.pushState;" +
                     "history.pushState = function() {" +
                     "origPushState.apply(this, arguments);" +
-                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "triggerTabChange();" +
                     "};" +
                     "var origReplaceState = history.replaceState;" +
                     "history.replaceState = function() {" +
                     "origReplaceState.apply(this, arguments);" +
-                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
+                    "triggerTabChange();" +
                     "};" +
-                    "window.addEventListener('popstate', function() {" +
-                    "if (window.MatchPulseBridge) { window.MatchPulseBridge.onTabChanged(); }" +
-                    "});" +
+                    "window.addEventListener('popstate', triggerTabChange);" +
+                    "setInterval(function() {" +
+                    "if (location.href !== lastUrl) {" +
+                    "lastUrl = location.href;" +
+                    "triggerTabChange();" +
+                    "}" +
+                    "}, 1000);" +
+                    "setTimeout(function() {" +
+                    "var observer = new MutationObserver(triggerTabChange);" +
+                    "var root = document.querySelector('#root') || document.body;" +
+                    "if (root) { observer.observe(root, { childList: true, subtree: true }); }" +
+                    "}, 2000);" +
                     "})()", null
                 )
             }

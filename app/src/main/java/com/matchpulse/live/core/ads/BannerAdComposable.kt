@@ -22,7 +22,7 @@ fun BannerAd(
     val adView = remember {
         AdView(context).also { view ->
             view.setAdUnitId(adUnitId)
-            view.setAdSize(AdSize.SMART_BANNER)
+            view.setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, AdSize.FULL_WIDTH))
             view.loadAd(adRequest)
         }
     }
