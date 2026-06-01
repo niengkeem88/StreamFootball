@@ -2,9 +2,9 @@ package com.matchpulse.live.core.ads
 
 import android.webkit.JavascriptInterface
 
-class WidgetBridge(private val onTabChanged: () -> Unit) {
+class WidgetBridge(private val callback: () -> Unit) {
     @JavascriptInterface
     fun onTabChanged() {
-        onTabChanged()
+        callback()
     }
 }
