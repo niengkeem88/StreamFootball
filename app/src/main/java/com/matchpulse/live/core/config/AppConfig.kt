@@ -17,12 +17,12 @@ data class AppConfig(
     val isDebugLike: Boolean = isDebugBuild || !isProduction
 
     val shouldEnableAds: Boolean =
-        enableAdsFlag && if (isDebugBuild) true else hasProductionAdIds()
+        enableAdsFlag
 
-    val bannerId: String = if (isDebugBuild) TEST_BANNER_ID else admobAndroidBannerId
-    val interstitialId: String = if (isDebugBuild) TEST_INTERSTITIAL_ID else admobAndroidInterstitialId
-    val nativeId: String = if (isDebugBuild) TEST_NATIVE_ID else admobAndroidNativeId
-    val rewardedId: String = if (isDebugBuild) TEST_REWARDED_ID else admobAndroidRewardedId
+    val bannerId: String = if (hasProductionAdIds()) admobAndroidBannerId else TEST_BANNER_ID
+    val interstitialId: String = if (hasProductionAdIds()) admobAndroidInterstitialId else TEST_INTERSTITIAL_ID
+    val nativeId: String = if (hasProductionAdIds()) admobAndroidNativeId else TEST_NATIVE_ID
+    val rewardedId: String = if (hasProductionAdIds()) admobAndroidRewardedId else TEST_REWARDED_ID
 
     fun hasProductionAdIds(): Boolean =
         admobAndroidAppId.startsWith("ca-app-pub-") &&
