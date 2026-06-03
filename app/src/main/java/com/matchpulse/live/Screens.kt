@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.blur
@@ -157,7 +158,7 @@ fun OnboardingFlow(
                     modifier = Modifier
                         .matchParentSize()
                         .blur(20.dp)
-                        .background(android.graphics.Color.parseColor("#000000").copy(alpha = 0.5f)),
+                        .background(Color(0x80000000)),
                 )
 
                 // Onboarding content
