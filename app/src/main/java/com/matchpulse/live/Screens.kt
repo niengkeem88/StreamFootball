@@ -43,6 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -61,6 +65,7 @@ import com.matchpulse.live.core.navigation.Routes
 import com.matchpulse.live.core.navigation.bottomTabs
 import com.matchpulse.live.feature.main.MainViewModel
 import kotlinx.coroutines.launch
+import com.matchpulse.live.R
 data class OnboardingPage(
     val emoji: String,
     val title: String,
@@ -124,15 +129,35 @@ fun OnboardingFlow(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+    Box(
+        modifier = Modifier.fillMaxSize(),
     ) {
-        // Main content area (weight 1f to push banner to bottom)
+        // Blurred background image
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_bg),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(25.dp),
+            contentScale = ContentScale.Crop,
+            alpha = 0.6f,
+        )
+        // Dark scrim overlay for text readability
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.55f)),
+        )
+        // Content
         Column(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
         ) {
+            // Main content area (weight 1f to push banner to bottom)
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
             val page = onboardingPages[currentPage]
 
             Spacer(Modifier.height(24.dp))
@@ -231,7 +256,7 @@ fun OnboardingFlow(
             }
 
             Spacer(Modifier.height(16.dp))
-        }
+            }
 
         // Bottom banner ad - positioned as shown in the screenshot
         if (config.enabled && config.bannerId.isNotBlank()) {
@@ -243,6 +268,7 @@ fun OnboardingFlow(
             )
         }
     }
+    } // close outer Box
 }
 
 @Composable
