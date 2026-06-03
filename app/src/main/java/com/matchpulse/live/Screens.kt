@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -383,21 +382,12 @@ fun ScoreBatWidget(
                 mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             }
             isHorizontalScrollBarEnabled = false
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setBackgroundColor(android.graphics.Color.parseColor("#FF07111F"))  // Dark Navy to avoid Samsung WebView transparency crash
             addJavascriptInterface(WidgetBridge(onWidgetTabChange), "MatchPulseBridge")
         }
     }
 
-    DisposableEffect(webView) {
-        onDispose {
-            try {
-                webView.stopLoading()
-                webView.loadUrl("about:blank")
-                webView.removeAllViews()
-                webView.destroy()
-            } catch (_: Exception) {}
-        }
-    }
+    // AndroidView lifecycle handles WebView destruction - no manual destroy needed
 
     AndroidView(
         factory = { webView },
