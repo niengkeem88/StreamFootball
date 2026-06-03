@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
@@ -145,12 +144,9 @@ fun OnboardingFlow(
             alpha = 0.85f,
         )
 
-        // Clear image overlay with radial alpha gradient mask
-        // Transparent at center → only blurred image visible → fully blurred
-        // Semi-opaque at edges → clear image blends in → blur appears reduced
-        Image(
-            painter = painterResource(id = R.drawable.onboarding_bg),
-            contentDescription = null,
+        // Dark vignette overlay to softly darken edges for depth
+        // Reliable across all GPU configs (unlike BlendMode.DstIn)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
@@ -160,16 +156,13 @@ fun OnboardingFlow(
                             colors = listOf(
                                 Color.Transparent,
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.15f),
+                                Color.Black.copy(alpha = 0.35f),
                             ),
                         ),
-                        blendMode = BlendMode.DstIn,
                         size = size,
                     )
-                },
-            contentScale = ContentScale.Crop,
-            alpha = 0.85f,
+                }
         )
 
         // Content column
@@ -187,7 +180,7 @@ fun OnboardingFlow(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                        .background(Color.Black.copy(alpha = 0.5f)),
                 )
 
                 // Onboarding content
