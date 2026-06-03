@@ -514,6 +514,45 @@ fun ScoreBatWidget(
                     "}, 2000);" +
                     "})()", null
                 )
+                // Inject custom CSS to match dark navy app theme
+                view?.evaluateJavascript(
+                    "(function() {" +
+                    "var style = document.createElement('style');" +
+                    "style.textContent = '" +
+                    "* { box-shadow: none !important; }" +
+                    "body { background-color: #07111F !important; color: #E2E8F0 !important; }" +
+                    ".livescore-widget, .scorebat-widget, .widget-container, " +
+                    "[class*='container'], [class*='wrapper'], [class*='inner'] { " +
+                    "background-color: #07111F !important; }" +
+                    "[class*='card'], [class*='match'], [class*='item'], " +
+                    "[class*='row'], [class*='box'] { " +
+                    "background-color: #0F1D2E !important; " +
+                    "border-color: #1A2D42 !important; }" +
+                    "a, [class*='link'], [class*='tab'], [class*='button'], " +
+                    "[class*='btn'] { color: #2B6CB0 !important; }" +
+                    "a:hover, [class*='tab']:hover, [class*='tab'].active, " +
+                    "[class*='tab'].selected { color: #4A9BEF !important; }" +
+                    "[class*='header'], [class*='title'], h1, h2, h3, h4 { " +
+                    "color: #F7FAFC !important; }" +
+                    "[class*='score'], [class*='goal'] { " +
+                    "color: #48BB78 !important; font-weight: bold !important; }" +
+                    "[class*='time'], [class*='date'], [class*='status'] { " +
+                    "color: #8899AA !important; }" +
+                    "[class*='live'], [class*='badge'] { " +
+                    "background-color: #E53E3E !important; color: #FFFFFF !important; }" +
+                    "[class*='divider'], [class*='separator'], hr { " +
+                    "border-color: #1A2D42 !important; background-color: #1A2D42 !important; }" +
+                    "[class*='footer'], [class*='branding'], [class*='powered'] { " +
+                    "display: none !important; }" +
+                    "td, th { border-color: #1A2D42 !important; }" +
+                    "table { background-color: #07111F !important; }" +
+                    "::-webkit-scrollbar { width: 4px !important; }" +
+                    "::-webkit-scrollbar-track { background: #0A1628 !important; }" +
+                    "::-webkit-scrollbar-thumb { background: #1A3A5C !important; border-radius: 2px !important; }" +
+                    "';" +
+                    "document.head.appendChild(style);" +
+                    "})()", null
+                )
             }
         }
         view.loadUrl("https://www.scorebat.com/embed/livescore/?token=$token&theme=dark&lang=en")
