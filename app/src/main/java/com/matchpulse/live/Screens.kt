@@ -43,7 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.blur
@@ -133,32 +136,58 @@ fun OnboardingFlow(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Clear background image (no blur - visible at top/bottom)
+        // Background: blurred image (uniform blur)
         Image(
             painter = painterResource(id = R.drawable.onboarding_bg),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().blur(15.dp),
             contentScale = ContentScale.Crop,
-            alpha = 0.8f,
+            alpha = 0.85f,
+        )
+
+        // Clear image overlay with radial alpha gradient mask
+        // Transparent at center → only blurred image visible → fully blurred
+        // Semi-opaque at edges → clear image blends in → blur appears reduced
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_bg),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.6f),
+                            ),
+                        ),
+                        blendMode = BlendMode.DstIn,
+                        size = size,
+                    )
+                },
+            contentScale = ContentScale.Crop,
+            alpha = 0.85f,
         )
 
         // Content column
         Column(
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
         ) {
-            // Top spacer pushes content to center
+            // Top spacer
             Spacer(Modifier.weight(1f))
 
-            // Content block with blurred scrim
+            // Content block with subtle scrim for text readability
             Box(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                // Blurred scrim - only behind content area
+                // Subtle dark scrim only behind the text
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .blur(20.dp)
-                        .background(Color(0x80000000)),
+                        .background(Color.Black.copy(alpha = 0.3f)),
                 )
 
                 // Onboarding content
@@ -270,7 +299,7 @@ val page = onboardingPages[currentPage]
                 }
             }
 
-            // Bottom spacer pushes content to center
+            // Bottom spacer
             Spacer(Modifier.weight(1f))
 
             // Bottom banner ad
