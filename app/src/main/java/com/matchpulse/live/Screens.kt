@@ -132,33 +132,43 @@ fun OnboardingFlow(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Blurred background image
+        // Clear background image (no blur - visible at top/bottom)
         Image(
             painter = painterResource(id = R.drawable.onboarding_bg),
             contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(25.dp),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            alpha = 0.6f,
+            alpha = 0.8f,
         )
-        // Dark scrim overlay for text readability
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.55f)),
-        )
-        // Content
+
+        // Content column
         Column(
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
         ) {
-            // Main content area (weight 1f to push banner to bottom)
-            Column(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // Top spacer pushes content to center
+            Spacer(Modifier.weight(1f))
+
+            // Content block with blurred scrim
+            Box(
+                modifier = Modifier.fillMaxWidth(),
             ) {
-            val page = onboardingPages[currentPage]
+                // Blurred scrim - only behind content area
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(20.dp)
+                        .background(android.graphics.Color.parseColor("#000000").copy(alpha = 0.5f)),
+                )
+
+                // Onboarding content
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+val page = onboardingPages[currentPage]
 
             Spacer(Modifier.height(24.dp))
 
@@ -256,21 +266,24 @@ fun OnboardingFlow(
             }
 
             Spacer(Modifier.height(16.dp))
+                }
             }
 
-        // Bottom banner ad - positioned as shown in the screenshot
-        if (config.enabled && config.bannerId.isNotBlank()) {
-            BannerAd(
-                adUnitId = config.bannerId,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(0.7f),
-            )
+            // Bottom spacer pushes content to center
+            Spacer(Modifier.weight(1f))
+
+            // Bottom banner ad
+            if (config.enabled && config.bannerId.isNotBlank()) {
+                BannerAd(
+                    adUnitId = config.bannerId,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(0.7f),
+                )
+            }
         }
     }
-    } // close outer Box
 }
-
 @Composable
 fun MainApp(
     viewModel: MainViewModel,
