@@ -54,8 +54,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.io.ByteArrayInputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -459,13 +457,12 @@ fun ScoreBatWidget(
         modifier = modifier,
     ) { view ->
         view.webViewClient = object : WebViewClient() {
-            // Block requests to known ad servers & inject dark navy CSS into widget HTML
+            // Block requests to known ad servers
             override fun shouldInterceptRequest(
                 view: WebView?,
                 request: android.webkit.WebResourceRequest?
             ): android.webkit.WebResourceResponse? {
                 val url = request?.url?.toString()?.lowercase() ?: return null
-                // Block known ad domains
                 if (url.contains("doubleclick") ||
                     url.contains("googlesyndication") ||
                     url.contains("googleadservices") ||
@@ -476,60 +473,8 @@ fun ScoreBatWidget(
                         "text/plain", "utf-8", ByteArrayInputStream("".toByteArray())
                     )
                 }
-                // Intercept the main widget HTML to inject custom CSS
-                if (url.contains("scorebat.com/embed/livescore") && !url.contains(".css") && !url.contains(".js") && !url.contains(".png") && !url.contains(".jpg")) {
-                    try {
-                        val connection = URL(request!!.url!!.toString()).openConnection() as HttpURLConnection
-                        connection.connectTimeout = 10000
-                        connection.readTimeout = 10000
-                        val inputStream = connection.inputStream
-                        val html = inputStream.bufferedReader().use { it.readText() }
-                        connection.disconnect()
-                        // Inject dark navy theme CSS into <head>
-                        val css = """
-                            <style id="mp-nav-theme">
-                            * { box-shadow: none !important; }
-                            body { background-color: #07111F !important; color: #E2E8F0 !important; }
-                            [class*="container"], [class*="wrapper"], [class*="inner"], [class*="widget"] {
-                                background-color: #07111F !important; }
-                            [class*="card"], [class*="match"], [class*="item"],
-                            [class*="row"], [class*="box"], [class*="panel"] {
-                                background-color: #0F1D2E !important;
-                                border-color: #1A2D42 !important; }
-                            a, [class*="link"], [class*="tab"], [class*="button"], [class*="btn"] {
-                                color: #2B6CB0 !important; }
-                            a:hover, [class*="tab"]:hover, [class*="tab"].active, [class*="tab"].selected {
-                                color: #4A9BEF !important; }
-                            [class*="header"], [class*="title"], h1, h2, h3, h4 {
-                                color: #F7FAFC !important; }
-                            [class*="score"], [class*="goal"] {
-                                color: #48BB78 !important; font-weight: bold !important; }
-                            [class*="time"], [class*="date"], [class*="status"] {
-                                color: #8899AA !important; }
-                            [class*="live"], [class*="badge"] {
-                                background-color: #E53E3E !important; color: #FFFFFF !important; }
-                            [class*="divider"], [class*="separator"], hr {
-                                border-color: #1A2D42 !important; background-color: #1A2D42 !important; }
-                            [class*="footer"], [class*="branding"], [class*="powered"] {
-                                display: none !important; }
-                            td, th { border-color: #1A2D42 !important; }
-                            table { background-color: #07111F !important; }
-                            ::-webkit-scrollbar { width: 4px !important; }
-                            ::-webkit-scrollbar-track { background: #0A1628 !important; }
-                            ::-webkit-scrollbar-thumb { background: #1A3A5C !important; border-radius: 2px !important; }
-                            </style>
-                        """.trimIndent()
-                        val modifiedHtml = html.replace("<head>", "<head>\n$css")
-                        return android.webkit.WebResourceResponse(
-                            "text/html", "utf-8", ByteArrayInputStream(modifiedHtml.toByteArray())
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
                 return null
             }
-
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 view?.evaluateJavascript(
