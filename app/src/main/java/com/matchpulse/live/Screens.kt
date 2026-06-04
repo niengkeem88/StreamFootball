@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
@@ -209,7 +210,8 @@ val page = onboardingPages[currentPage]
             Text(
                 text = page.title,
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
                 modifier = Modifier.padding(horizontal = 32.dp),
             )
 
@@ -219,7 +221,7 @@ val page = onboardingPages[currentPage]
             Text(
                 text = page.description,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.85f),
                 modifier = Modifier.padding(horizontal = 32.dp),
             )
 
